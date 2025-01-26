@@ -21,11 +21,20 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
 
   useEffect(() => {
     const loadQuestions = async () => {
-      const loadedQuestions = await getQuestions(subjectId);
-      setQuestions(loadedQuestions);
+      try {
+        const loadedQuestions = await getQuestions(subjectId);
+        setQuestions(loadedQuestions);
+      } catch (error) {
+        console.error("Error loading questions:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load questions. Please try again.",
+          variant: "destructive",
+        });
+      }
     };
     loadQuestions();
-  }, [subjectId]);
+  }, [subjectId, toast]);
 
   const handleNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
@@ -45,18 +54,27 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
     const currentQuestion = questions[currentQuestionIndex];
     const newBookmarkStatus = !currentQuestion.isBookmarked;
     
-    await updateBookmark(subjectId, currentQuestion.id.toString(), newBookmarkStatus);
-    
-    setQuestions(questions.map((q, idx) => 
-      idx === currentQuestionIndex ? { ...q, isBookmarked: newBookmarkStatus } : q
-    ));
+    try {
+      await updateBookmark(subjectId, currentQuestion.id.toString(), newBookmarkStatus);
+      
+      setQuestions(questions.map((q, idx) => 
+        idx === currentQuestionIndex ? { ...q, isBookmarked: newBookmarkStatus } : q
+      ));
 
-    toast({
-      title: newBookmarkStatus ? "Question bookmarked" : "Bookmark removed",
-      description: newBookmarkStatus
-        ? "You can find this question in your bookmarks"
-        : "Question removed from bookmarks",
-    });
+      toast({
+        title: newBookmarkStatus ? "Question bookmarked" : "Bookmark removed",
+        description: newBookmarkStatus
+          ? "You can find this question in your bookmarks"
+          : "Question removed from bookmarks",
+      });
+    } catch (error) {
+      console.error("Error updating bookmark:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update bookmark. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (questions.length === 0) {
