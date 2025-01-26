@@ -1,21 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QuestionCard } from "./QuestionCard";
 import { ModeToggle } from "./ModeToggle";
 import { Button } from "./ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Question } from "@/types/question";
 import { useToast } from "./ui/use-toast";
+import { getQuestions, updateBookmark } from "@/services/questionService";
 
 interface QuizSectionProps {
-  questions: Question[];
+  subjectId: number;
   onBack: () => void;
 }
 
-export const QuizSection = ({ questions, onBack }: QuizSectionProps) => {
+export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
   const [mode, setMode] = useState<"practice" | "exam">("practice");
   const [selectedOption, setSelectedOption] = useState<string>();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const loadQuestions = async () => {
+      const loadedQuestions = await getQuestions(subjectId);
+      setQuestions(loadedQuestions);
+    };
+    loadQuestions();
+  }, [subjectId]);
 
   const handleNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
@@ -31,18 +41,27 @@ export const QuizSection = ({ questions, onBack }: QuizSectionProps) => {
     }
   };
 
-  const handleToggleBookmark = () => {
-    questions[currentQuestionIndex].isBookmarked = !questions[currentQuestionIndex].isBookmarked;
+  const handleToggleBookmark = async () => {
+    const currentQuestion = questions[currentQuestionIndex];
+    const newBookmarkStatus = !currentQuestion.isBookmarked;
+    
+    await updateBookmark(subjectId, currentQuestion.id.toString(), newBookmarkStatus);
+    
+    setQuestions(questions.map((q, idx) => 
+      idx === currentQuestionIndex ? { ...q, isBookmarked: newBookmarkStatus } : q
+    ));
 
     toast({
-      title: questions[currentQuestionIndex].isBookmarked
-        ? "Question bookmarked"
-        : "Bookmark removed",
-      description: questions[currentQuestionIndex].isBookmarked
+      title: newBookmarkStatus ? "Question bookmarked" : "Bookmark removed",
+      description: newBookmarkStatus
         ? "You can find this question in your bookmarks"
         : "Question removed from bookmarks",
     });
   };
+
+  if (questions.length === 0) {
+    return <div>Loading questions...</div>;
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">

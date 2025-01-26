@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { SubjectGrid } from "@/components/SubjectGrid";
 import { QuizSection } from "@/components/QuizSection";
 import { subjects } from "@/data/subjects";
-import { questions } from "@/data/questions";
 
 const Index = () => {
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null);
@@ -31,7 +30,7 @@ const Index = () => {
           />
         ) : (
           <QuizSection
-            questions={questions[selectedSubject] || []}
+            subjectId={selectedSubject}
             onBack={() => setSelectedSubject(null)}
           />
         )}
