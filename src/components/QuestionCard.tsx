@@ -1,6 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Timer } from "./Timer";
 import { cn } from "@/lib/utils";
+import { Bookmark } from "lucide-react";
+import { Button } from "./ui/button";
 
 interface Option {
   id: string;
@@ -18,6 +20,8 @@ interface QuestionCardProps {
   timeLimit: number;
   onTimeUp: () => void;
   className?: string;
+  isBookmarked?: boolean;
+  onToggleBookmark?: () => void;
 }
 
 export const QuestionCard = ({
@@ -31,6 +35,8 @@ export const QuestionCard = ({
   timeLimit,
   onTimeUp,
   className,
+  isBookmarked,
+  onToggleBookmark,
 }: QuestionCardProps) => {
   return (
     <motion.div
@@ -43,7 +49,20 @@ export const QuestionCard = ({
         className
       )}
     >
-      <Timer duration={timeLimit} onComplete={onTimeUp} className="mb-6" />
+      <div className="mb-6 flex items-start justify-between">
+        <Timer duration={timeLimit} onComplete={onTimeUp} />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggleBookmark}
+          className={cn(
+            "transition-colors",
+            isBookmarked && "text-yellow-500 hover:text-yellow-600"
+          )}
+        >
+          <Bookmark className={cn("h-5 w-5", isBookmarked && "fill-current")} />
+        </Button>
+      </div>
 
       <h2 className="mb-6 text-xl font-semibold text-gray-900">{question}</h2>
 

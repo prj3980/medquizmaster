@@ -5,6 +5,7 @@ import { QuestionCard } from "@/components/QuestionCard";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 // Mock data - replace with actual data from your backend
 const subjects = [
@@ -42,6 +43,7 @@ const sampleQuestions = [
     correctOption: "b",
     explanation:
       "Cardiac muscle cells are characterized by the presence of intercalated discs, which are specialized junctions that allow for rapid electrical conduction between cells.",
+    isBookmarked: false,
   },
   {
     id: 2,
@@ -55,8 +57,8 @@ const sampleQuestions = [
     correctOption: "b",
     explanation:
       "Angiotensin Converting Enzyme (ACE) is responsible for converting angiotensin I to angiotensin II in the renin-angiotensin-aldosterone system.",
+    isBookmarked: false,
   },
-  // Add more questions as needed
 ];
 
 const Index = () => {
@@ -64,19 +66,37 @@ const Index = () => {
   const [mode, setMode] = useState<"practice" | "exam">("practice");
   const [selectedOption, setSelectedOption] = useState<string>();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [questions, setQuestions] = useState(sampleQuestions);
+  const { toast } = useToast();
 
   const handleNextQuestion = () => {
-    if (currentQuestionIndex < sampleQuestions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex((prev) => prev + 1);
       setSelectedOption(undefined);
     }
   };
 
   const handlePreviousQuestion = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
+      setCurrentQuestionIndex((prev) => prev - 1);
       setSelectedOption(undefined);
     }
+  };
+
+  const handleToggleBookmark = () => {
+    const updatedQuestions = [...questions];
+    const currentQuestion = updatedQuestions[currentQuestionIndex];
+    currentQuestion.isBookmarked = !currentQuestion.isBookmarked;
+    setQuestions(updatedQuestions);
+
+    toast({
+      title: currentQuestion.isBookmarked
+        ? "Question bookmarked"
+        : "Bookmark removed",
+      description: currentQuestion.isBookmarked
+        ? "You can find this question in your bookmarks"
+        : "Question removed from bookmarks",
+    });
   };
 
   return (
@@ -87,10 +107,10 @@ const Index = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8 text-center"
         >
-          <h1 className="mb-2 text-4xl font-bold text-gray-900">MBBS MCQ Practice</h1>
-          <p className="text-lg text-gray-600">
-            Select a subject to start practicing
-          </p>
+          <h1 className="mb-2 text-4xl font-bold text-gray-900">
+            MBBS MCQ Practice
+          </h1>
+          <p className="text-lg text-gray-600">Select a subject to start practicing</p>
         </motion.div>
 
         {!selectedSubject ? (
@@ -128,15 +148,17 @@ const Index = () => {
             </div>
 
             <QuestionCard
-              question={sampleQuestions[currentQuestionIndex].text}
-              options={sampleQuestions[currentQuestionIndex].options}
+              question={questions[currentQuestionIndex].text}
+              options={questions[currentQuestionIndex].options}
               selectedOption={selectedOption}
-              correctOption={sampleQuestions[currentQuestionIndex].correctOption}
-              explanation={sampleQuestions[currentQuestionIndex].explanation}
+              correctOption={questions[currentQuestionIndex].correctOption}
+              explanation={questions[currentQuestionIndex].explanation}
               onSelect={setSelectedOption}
               showExplanation={mode === "practice" && !!selectedOption}
-              timeLimit={60} // Set to 60 seconds (1 minute)
+              timeLimit={60}
               onTimeUp={() => console.log("Time's up!")}
+              isBookmarked={questions[currentQuestionIndex].isBookmarked}
+              onToggleBookmark={handleToggleBookmark}
             />
 
             <div className="flex justify-between">
@@ -151,7 +173,7 @@ const Index = () => {
               <Button
                 variant="outline"
                 onClick={handleNextQuestion}
-                disabled={currentQuestionIndex === sampleQuestions.length - 1}
+                disabled={currentQuestionIndex === questions.length - 1}
               >
                 Next
                 <ChevronRight className="ml-2 h-4 w-4" />
