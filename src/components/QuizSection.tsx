@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { QuestionCard } from "./QuestionCard";
 import { ModeToggle } from "./ModeToggle";
 import { Button } from "./ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Upload } from "lucide-react";
 import { Question } from "@/types/question";
 import { useToast } from "./ui/use-toast";
-import { getQuestions, updateBookmark } from "@/services/questionService";
+import { getQuestions, updateBookmark, addQuestion } from "@/services/questionService";
+import { generateTemplate, processExcelFile } from "@/utils/excelUtils";
 
 interface QuizSectionProps {
   subjectId: number;
@@ -18,6 +19,7 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questions, setQuestions] = useState<Question[]>([]);
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const loadQuestions = async () => {
@@ -35,6 +37,42 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
     };
     loadQuestions();
   }, [subjectId, toast]);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const processedQuestions = await processExcelFile(file);
+      
+      // Add each question to the database
+      for (const question of processedQuestions) {
+        const { id, ...questionData } = question;
+        await addQuestion(subjectId, questionData);
+      }
+
+      // Reload questions
+      const loadedQuestions = await getQuestions(subjectId);
+      setQuestions(loadedQuestions);
+
+      toast({
+        title: "Success",
+        description: "Questions imported successfully",
+      });
+    } catch (error) {
+      console.error("Error importing questions:", error);
+      toast({
+        title: "Error",
+        description: "Failed to import questions. Please check the file format.",
+        variant: "destructive",
+      });
+    }
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
@@ -90,7 +128,30 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
         >
           ← Back to Subjects
         </button>
-        <ModeToggle mode={mode} onChange={setMode} />
+        <div className="flex items-center gap-4">
+          <input
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleFileUpload}
+            ref={fileInputRef}
+            className="hidden"
+          />
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Import Questions
+          </Button>
+          <Button
+            variant="outline"
+            onClick={generateTemplate}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Download Template
+          </Button>
+          <ModeToggle mode={mode} onChange={setMode} />
+        </div>
       </div>
 
       <QuestionCard
