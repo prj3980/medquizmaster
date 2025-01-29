@@ -11,20 +11,27 @@ interface ExcelQuestion {
 }
 
 export const generateTemplate = () => {
-  const template = [
-    {
-      Question: 'Sample question text here',
-      'Option A': 'First option',
-      'Option B': 'Second option',
-      'Option C': 'Third option',
-      'Option D': 'Fourth option',
-      'Correct Option': 'A',
-      Explanation: 'Explanation for the correct answer'
-    }
-  ];
+  // Create template data with clear example
+  const template = [{
+    Question: 'What is the capital of France?',
+    'Option A': 'London',
+    'Option B': 'Paris',
+    'Option C': 'Berlin',
+    'Option D': 'Madrid',
+    'Correct Option': 'B',
+    Explanation: 'Paris is the capital and largest city of France.'
+  }];
 
+  // Create a new workbook
   const wb = XLSX.utils.book_new();
+  
+  // Convert the template data to a worksheet
   const ws = XLSX.utils.json_to_sheet(template);
+  
+  // Add the worksheet to the workbook
+  XLSX.utils.book_append_sheet(wb, ws, "Questions");
+  
+  // Write the workbook to a file
   XLSX.writeFile(wb, 'question_template.xlsx');
 };
 
