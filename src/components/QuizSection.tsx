@@ -7,6 +7,7 @@ import { Question } from "@/types/question";
 import { useToast } from "./ui/use-toast";
 import { getQuestions, updateBookmark, addQuestion } from "@/services/questionService";
 import { generateTemplate, processExcelFile } from "@/utils/excelUtils";
+import * as XLSX from 'xlsx';
 
 interface QuizSectionProps {
   subjectId: number;
@@ -26,6 +27,15 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
       try {
         const loadedQuestions = await getQuestions(subjectId);
         setQuestions(loadedQuestions);
+        
+        // Update the question count in local storage
+        const subjects = JSON.parse(localStorage.getItem('subjects') || '[]');
+        const updatedSubjects = subjects.map((subject: any) => 
+          subject.id === subjectId 
+            ? { ...subject, totalQuestions: loadedQuestions.length }
+            : subject
+        );
+        localStorage.setItem('subjects', JSON.stringify(updatedSubjects));
       } catch (error) {
         console.error("Error loading questions:", error);
         toast({
@@ -37,6 +47,43 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
     };
     loadQuestions();
   }, [subjectId, toast]);
+
+  const handleExportQuestions = () => {
+    try {
+      // Convert questions to Excel format
+      const exportData = questions.map(q => ({
+        Question: q.text,
+        'Option A': q.options[0].text,
+        'Option B': q.options[1].text,
+        'Option C': q.options[2].text,
+        'Option D': q.options[3].text,
+        'Correct Option': q.correctOption,
+        Explanation: q.explanation
+      }));
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, "Questions");
+
+      // Save file
+      XLSX.writeFile(wb, `questions_subject_${subjectId}.xlsx`);
+
+      toast({
+        title: "Success",
+        description: "Questions exported successfully",
+      });
+    } catch (error) {
+      console.error("Error exporting questions:", error);
+      toast({
+        title: "Error",
+        description: "Failed to export questions. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -188,6 +235,14 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
           >
             <Download className="h-4 w-4" />
             Download Template
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleExportQuestions}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Export Questions
           </Button>
           <ModeToggle mode={mode} onChange={setMode} />
         </div>
