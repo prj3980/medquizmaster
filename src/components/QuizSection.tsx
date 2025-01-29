@@ -62,7 +62,7 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
       // Process each question sequentially
       for (const question of processedQuestions) {
         await addQuestion(subjectId, {
-          text: question.text,
+          text: question.Question,
           options: [
             { id: "a", text: question["Option A"] },
             { id: "b", text: question["Option B"] },
@@ -76,7 +76,7 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
       }
 
       // Fetch updated questions
-      const { questions: updatedQuestions } = useQuestions(subjectId);
+      const updatedQuestions = await getQuestions(subjectId);
       setQuestions(updatedQuestions);
 
       toast({
