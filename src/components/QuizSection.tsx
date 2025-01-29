@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { QuestionCard } from "./QuestionCard";
-import { ModeToggle } from "./ModeToggle";
+import { QuestionControls } from "./QuestionControls";
+import { QuestionActions } from "./QuestionActions";
 import { Button } from "./ui/button";
-import { ChevronLeft, ChevronRight, Download, Upload } from "lucide-react";
-import { Question } from "@/types/question";
 import { useToast } from "./ui/use-toast";
-import { getQuestions, updateBookmark, addQuestion } from "@/services/questionService";
+import { updateBookmark, addQuestion } from "@/services/questionService";
 import { generateTemplate, processExcelFile } from "@/utils/excelUtils";
 import * as XLSX from 'xlsx';
+import { useQuestions } from "@/hooks/useQuestions";
 
 interface QuizSectionProps {
   subjectId: number;
@@ -18,53 +18,11 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
   const [mode, setMode] = useState<"practice" | "exam">("practice");
   const [selectedOption, setSelectedOption] = useState<string>();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const { questions, setQuestions } = useQuestions(subjectId);
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const loadQuestions = async () => {
-      try {
-        const loadedQuestions = await getQuestions(subjectId);
-        setQuestions(loadedQuestions);
-        
-        // Get subjects from localStorage and parse them
-        const subjectsJson = localStorage.getItem('subjects');
-        if (!subjectsJson) return;
-        
-        const subjects = JSON.parse(subjectsJson);
-        
-        // Create a new array with updated subject data
-        const updatedSubjects = subjects.map((subject: any) => {
-          if (subject.id === subjectId) {
-            // Only include essential, serializable properties
-            return {
-              id: subject.id,
-              title: subject.title,
-              totalQuestions: loadedQuestions.length,
-              progress: subject.progress || 0
-            };
-          }
-          return subject;
-        });
-
-        // Store the simplified data back in localStorage
-        localStorage.setItem('subjects', JSON.stringify(updatedSubjects));
-      } catch (error) {
-        console.error("Error loading questions:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load questions. Please try again.",
-          variant: "destructive",
-        });
-      }
-    };
-    loadQuestions();
-  }, [subjectId, toast]);
 
   const handleExportQuestions = () => {
     try {
-      // Only include essential data for export
       const exportData = questions.map(q => ({
         Question: q.text,
         'Option A': q.options[0].text,
@@ -101,15 +59,13 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
     try {
       const processedQuestions = await processExcelFile(file);
       
-      // Add each question to the database
       for (const question of processedQuestions) {
         const { id, ...questionData } = question;
         await addQuestion(subjectId, questionData);
       }
 
-      // Reload questions
-      const loadedQuestions = await getQuestions(subjectId);
-      setQuestions(loadedQuestions);
+      const updatedQuestions = await useQuestions(subjectId).questions;
+      setQuestions(updatedQuestions);
 
       toast({
         title: "Success",
@@ -122,25 +78,6 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
         description: "Failed to import questions. Please check the file format.",
         variant: "destructive",
       });
-    }
-    
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex((prev) => prev + 1);
-      setSelectedOption(undefined);
-    }
-  };
-
-  const handlePreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex((prev) => prev - 1);
-      setSelectedOption(undefined);
     }
   };
 
@@ -175,37 +112,14 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
     return (
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex items-center justify-between">
-          <button
-            onClick={onBack}
-            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-50"
-          >
-            ← Back to Subjects
-          </button>
-          <div className="flex items-center gap-4">
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileUpload}
-              ref={fileInputRef}
-              className="hidden"
-            />
-            <Button
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2"
-            >
-              <Upload className="h-4 w-4" />
-              Import Questions
-            </Button>
-            <Button
-              variant="outline"
-              onClick={generateTemplate}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Download Template
-            </Button>
-          </div>
+          <Button variant="outline" onClick={onBack}>← Back to Subjects</Button>
+          <QuestionActions
+            mode={mode}
+            onModeChange={setMode}
+            onExport={handleExportQuestions}
+            onImport={handleFileUpload}
+            onDownloadTemplate={generateTemplate}
+          />
         </div>
         <div className="text-center py-8">Loading questions...</div>
       </div>
@@ -215,46 +129,14 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center justify-between">
-        <button
-          onClick={onBack}
-          className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-50"
-        >
-          ← Back to Subjects
-        </button>
-        <div className="flex items-center gap-4">
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleFileUpload}
-            ref={fileInputRef}
-            className="hidden"
-          />
-          <Button
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2"
-          >
-            <Upload className="h-4 w-4" />
-            Import Questions
-          </Button>
-          <Button
-            variant="outline"
-            onClick={generateTemplate}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Download Template
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleExportQuestions}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Export Questions
-          </Button>
-          <ModeToggle mode={mode} onChange={setMode} />
-        </div>
+        <Button variant="outline" onClick={onBack}>← Back to Subjects</Button>
+        <QuestionActions
+          mode={mode}
+          onModeChange={setMode}
+          onExport={handleExportQuestions}
+          onImport={handleFileUpload}
+          onDownloadTemplate={generateTemplate}
+        />
       </div>
 
       <QuestionCard
@@ -271,24 +153,18 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
         onToggleBookmark={handleToggleBookmark}
       />
 
-      <div className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={handlePreviousQuestion}
-          disabled={currentQuestionIndex === 0}
-        >
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          onClick={handleNextQuestion}
-          disabled={currentQuestionIndex === questions.length - 1}
-        >
-          Next
-          <ChevronRight className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
+      <QuestionControls
+        currentQuestionIndex={currentQuestionIndex}
+        totalQuestions={questions.length}
+        onPrevious={() => {
+          setCurrentQuestionIndex((prev) => prev - 1);
+          setSelectedOption(undefined);
+        }}
+        onNext={() => {
+          setCurrentQuestionIndex((prev) => prev + 1);
+          setSelectedOption(undefined);
+        }}
+      />
     </div>
   );
 };
