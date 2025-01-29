@@ -1,5 +1,15 @@
 import * as XLSX from 'xlsx';
 
+interface ExcelQuestion {
+  Question: string;
+  'Option A': string;
+  'Option B': string;
+  'Option C': string;
+  'Option D': string;
+  'Correct Option': string;
+  Explanation: string;
+}
+
 export const generateTemplate = () => {
   const template = [
     {
@@ -18,7 +28,7 @@ export const generateTemplate = () => {
   XLSX.writeFile(wb, 'question_template.xlsx');
 };
 
-export const processExcelFile = async (file: File): Promise<any[]> => {
+export const processExcelFile = async (file: File): Promise<ExcelQuestion[]> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
@@ -31,8 +41,8 @@ export const processExcelFile = async (file: File): Promise<any[]> => {
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Convert to JSON
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        // Convert to JSON with type assertion
+        const jsonData = XLSX.utils.sheet_to_json(worksheet) as ExcelQuestion[];
 
         // Validate the data format
         const isValidFormat = jsonData.every(row => 
