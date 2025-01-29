@@ -59,12 +59,24 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
     try {
       const processedQuestions = await processExcelFile(file);
       
+      // Process each question sequentially
       for (const question of processedQuestions) {
-        const { id, ...questionData } = question;
-        await addQuestion(subjectId, questionData);
+        await addQuestion(subjectId, {
+          text: question.text,
+          options: [
+            { id: "a", text: question["Option A"] },
+            { id: "b", text: question["Option B"] },
+            { id: "c", text: question["Option C"] },
+            { id: "d", text: question["Option D"] }
+          ],
+          correctOption: question["Correct Option"].toLowerCase(),
+          explanation: question.Explanation,
+          isBookmarked: false
+        });
       }
 
-      const updatedQuestions = await useQuestions(subjectId).questions;
+      // Fetch updated questions
+      const { questions: updatedQuestions } = useQuestions(subjectId);
       setQuestions(updatedQuestions);
 
       toast({

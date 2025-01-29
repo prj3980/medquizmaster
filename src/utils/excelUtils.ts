@@ -1,54 +1,64 @@
 import * as XLSX from 'xlsx';
-import { Question, Option } from '@/types/question';
 
 export const generateTemplate = () => {
   const template = [
-    ['Chapter', 'Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct Option', 'Explanation']
+    {
+      Question: 'Sample question text here',
+      'Option A': 'First option',
+      'Option B': 'Second option',
+      'Option C': 'Third option',
+      'Option D': 'Fourth option',
+      'Correct Option': 'A',
+      Explanation: 'Explanation for the correct answer'
+    }
   ];
 
   const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(template);
-  XLSX.utils.book_append_sheet(wb, ws, 'Questions Template');
-  XLSX.writeFile(wb, 'questions_template.xlsx');
+  const ws = XLSX.utils.json_to_sheet(template);
+  XLSX.writeFile(wb, 'question_template.xlsx');
 };
 
-export const processExcelFile = (file: File): Promise<Question[]> => {
+export const processExcelFile = async (file: File): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
-        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
+        
+        // Get first sheet
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        // Convert to JSON
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        // Skip header row
-        const questions: Question[] = jsonData.slice(1).map((row, index) => {
-          const [chapter, text, optionA, optionB, optionC, optionD, correctOption, explanation] = row;
-          
-          const options: Option[] = [
-            { id: 'a', text: optionA },
-            { id: 'b', text: optionB },
-            { id: 'c', text: optionC },
-            { id: 'd', text: optionD },
-          ];
+        // Validate the data format
+        const isValidFormat = jsonData.every(row => 
+          'Question' in row &&
+          'Option A' in row &&
+          'Option B' in row &&
+          'Option C' in row &&
+          'Option D' in row &&
+          'Correct Option' in row &&
+          'Explanation' in row
+        );
 
-          return {
-            id: index + 1,
-            text,
-            options,
-            correctOption: correctOption.toLowerCase(),
-            explanation,
-            isBookmarked: false,
-          };
-        });
+        if (!isValidFormat) {
+          throw new Error('Invalid Excel format. Please use the template.');
+        }
 
-        resolve(questions);
+        resolve(jsonData);
       } catch (error) {
-        reject(new Error('Error processing Excel file'));
+        reject(new Error('Error processing Excel file. Please ensure you are using the correct template.'));
       }
     };
-    reader.onerror = () => reject(new Error('Error reading file'));
+
+    reader.onerror = () => {
+      reject(new Error('Error reading the file'));
+    };
+
     reader.readAsArrayBuffer(file);
   });
 };
