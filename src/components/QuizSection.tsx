@@ -30,11 +30,18 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
         
         // Update the question count in local storage
         const subjects = JSON.parse(localStorage.getItem('subjects') || '[]');
-        const updatedSubjects = subjects.map((subject: any) => 
-          subject.id === subjectId 
-            ? { ...subject, totalQuestions: loadedQuestions.length }
-            : subject
-        );
+        const updatedSubjects = subjects.map((subject: any) => {
+          if (subject.id === subjectId) {
+            // Create a new simple object with only the necessary properties
+            return {
+              ...subject,
+              totalQuestions: loadedQuestions.length,
+              id: subject.id,
+              name: subject.name
+            };
+          }
+          return subject;
+        });
         localStorage.setItem('subjects', JSON.stringify(updatedSubjects));
       } catch (error) {
         console.error("Error loading questions:", error);
@@ -50,7 +57,7 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
 
   const handleExportQuestions = () => {
     try {
-      // Convert questions to Excel format
+      // Convert questions to Excel format with only necessary data
       const exportData = questions.map(q => ({
         Question: q.text,
         'Option A': q.options[0].text,
@@ -61,14 +68,9 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
         Explanation: q.explanation
       }));
 
-      // Create workbook and worksheet
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(exportData);
-
-      // Add worksheet to workbook
       XLSX.utils.book_append_sheet(wb, ws, "Questions");
-
-      // Save file
       XLSX.writeFile(wb, `questions_subject_${subjectId}.xlsx`);
 
       toast({
