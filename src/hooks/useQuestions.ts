@@ -24,24 +24,23 @@ export const useQuestions = (subjectId: number) => {
     };
 
     const updateSubjectData = (questionCount: number) => {
-      const subjectsJson = localStorage.getItem('subjects');
-      if (!subjectsJson) return;
-      
-      const subjects = JSON.parse(subjectsJson);
-      
-      const updatedSubjects = subjects.map((subject: any) => {
-        if (subject.id === subjectId) {
-          return {
-            id: subject.id,
-            title: subject.title,
-            totalQuestions: questionCount,
-            progress: subject.progress || 0
-          };
-        }
-        return subject;
-      });
+      try {
+        const subjectsJson = localStorage.getItem('subjects');
+        if (!subjectsJson) return;
+        
+        const subjects = JSON.parse(subjectsJson);
+        
+        const updatedSubjects = subjects.map((subject: any) => ({
+          id: subject.id,
+          title: subject.title,
+          totalQuestions: subject.id === subjectId ? questionCount : subject.totalQuestions,
+          progress: subject.progress || 0
+        }));
 
-      localStorage.setItem('subjects', JSON.stringify(updatedSubjects));
+        localStorage.setItem('subjects', JSON.stringify(updatedSubjects));
+      } catch (error) {
+        console.error("Error updating subject data:", error);
+      }
     };
 
     loadQuestions();
