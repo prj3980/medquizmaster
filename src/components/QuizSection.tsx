@@ -4,7 +4,7 @@ import { QuestionControls } from "./QuestionControls";
 import { QuestionActions } from "./QuestionActions";
 import { Button } from "./ui/button";
 import { useToast } from "./ui/use-toast";
-import { updateBookmark, addQuestion } from "@/services/questionService";
+import { updateBookmark, addQuestion, getQuestions } from "@/services/questionService";
 import { generateTemplate, processExcelFile } from "@/utils/excelUtils";
 import * as XLSX from 'xlsx';
 import { useQuestions } from "@/hooks/useQuestions";
