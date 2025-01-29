@@ -28,20 +28,27 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
         const loadedQuestions = await getQuestions(subjectId);
         setQuestions(loadedQuestions);
         
-        // Update the question count in local storage
-        const subjects = JSON.parse(localStorage.getItem('subjects') || '[]');
+        // Get subjects from localStorage and parse them
+        const subjectsJson = localStorage.getItem('subjects');
+        if (!subjectsJson) return;
+        
+        const subjects = JSON.parse(subjectsJson);
+        
+        // Create a new array with updated subject data
         const updatedSubjects = subjects.map((subject: any) => {
           if (subject.id === subjectId) {
-            // Create a new simple object with only the necessary properties
+            // Only include essential, serializable properties
             return {
-              ...subject,
-              totalQuestions: loadedQuestions.length,
               id: subject.id,
-              name: subject.name
+              title: subject.title,
+              totalQuestions: loadedQuestions.length,
+              progress: subject.progress || 0
             };
           }
           return subject;
         });
+
+        // Store the simplified data back in localStorage
         localStorage.setItem('subjects', JSON.stringify(updatedSubjects));
       } catch (error) {
         console.error("Error loading questions:", error);
@@ -57,7 +64,7 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
 
   const handleExportQuestions = () => {
     try {
-      // Convert questions to Excel format with only necessary data
+      // Only include essential data for export
       const exportData = questions.map(q => ({
         Question: q.text,
         'Option A': q.options[0].text,
