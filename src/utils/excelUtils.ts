@@ -37,12 +37,27 @@ export const processExcelFile = async (file: File): Promise<ExcelQuestion[]> => 
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         
+        // Check if workbook is empty
+        if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+          throw new Error('The Excel file is empty. Please use a valid template with data.');
+        }
+        
         // Get first sheet
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Convert to JSON with type assertion
+        // Check if worksheet is empty
+        if (!worksheet || Object.keys(worksheet).length <= 1) {
+          throw new Error('The Excel sheet is empty. Please add questions using the template format.');
+        }
+        
+        // Convert to JSON
         const jsonData = XLSX.utils.sheet_to_json(worksheet) as ExcelQuestion[];
+
+        // Check if there's any data
+        if (!jsonData || jsonData.length === 0) {
+          throw new Error('No questions found in the Excel file. Please add questions using the template format.');
+        }
 
         // Validate the data format
         const isValidFormat = jsonData.every(row => 
@@ -56,17 +71,21 @@ export const processExcelFile = async (file: File): Promise<ExcelQuestion[]> => 
         );
 
         if (!isValidFormat) {
-          throw new Error('Invalid Excel format. Please use the template.');
+          throw new Error('Invalid Excel format. Please use the template provided by clicking "Download Template".');
         }
 
         resolve(jsonData);
       } catch (error) {
-        reject(new Error('Error processing Excel file. Please ensure you are using the correct template.'));
+        if (error instanceof Error) {
+          reject(new Error(error.message));
+        } else {
+          reject(new Error('Error processing Excel file. Please ensure you are using the correct template.'));
+        }
       }
     };
 
     reader.onerror = () => {
-      reject(new Error('Error reading the file'));
+      reject(new Error('Error reading the file. Please try again.'));
     };
 
     reader.readAsArrayBuffer(file);
