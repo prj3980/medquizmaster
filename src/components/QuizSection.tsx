@@ -116,7 +116,44 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
   };
 
   if (questions.length === 0) {
-    return <div>Loading questions...</div>;
+    return (
+      <div className="mx-auto max-w-3xl space-y-6">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={onBack}
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-50"
+          >
+            ← Back to Subjects
+          </button>
+          <div className="flex items-center gap-4">
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileUpload}
+              ref={fileInputRef}
+              className="hidden"
+            />
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              Import Questions
+            </Button>
+            <Button
+              variant="outline"
+              onClick={generateTemplate}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Download Template
+            </Button>
+          </div>
+        </div>
+        <div className="text-center py-8">Loading questions...</div>
+      </div>
+    );
   }
 
   return (
@@ -139,15 +176,17 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
           <Button
             variant="outline"
             onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2"
           >
-            <Upload className="mr-2 h-4 w-4" />
+            <Upload className="h-4 w-4" />
             Import Questions
           </Button>
           <Button
             variant="outline"
             onClick={generateTemplate}
+            className="flex items-center gap-2"
           >
-            <Download className="mr-2 h-4 w-4" />
+            <Download className="h-4 w-4" />
             Download Template
           </Button>
           <ModeToggle mode={mode} onChange={setMode} />
