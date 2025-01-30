@@ -8,10 +8,10 @@ interface ExcelQuestion {
   'Option D': string;
   'Correct Option': string;
   Explanation: string;
+  Chapter?: string;
 }
 
 export const generateTemplate = () => {
-  // Create template data with clear example
   const template = [{
     Question: 'What is the capital of France?',
     'Option A': 'London',
@@ -19,19 +19,13 @@ export const generateTemplate = () => {
     'Option C': 'Berlin',
     'Option D': 'Madrid',
     'Correct Option': 'B',
-    Explanation: 'Paris is the capital and largest city of France.'
+    Explanation: 'Paris is the capital and largest city of France.',
+    Chapter: 'Geography'
   }];
 
-  // Create a new workbook
   const wb = XLSX.utils.book_new();
-  
-  // Convert the template data to a worksheet
   const ws = XLSX.utils.json_to_sheet(template);
-  
-  // Add the worksheet to the workbook
   XLSX.utils.book_append_sheet(wb, ws, "Questions");
-  
-  // Write the workbook to a file
   XLSX.writeFile(wb, 'question_template.xlsx');
 };
 
@@ -44,55 +38,45 @@ export const processExcelFile = async (file: File): Promise<ExcelQuestion[]> => 
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         
-        // Check if workbook is empty
         if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
-          throw new Error('The Excel file is empty. Please use a valid template with data.');
+          throw new Error('The Excel file is empty.');
         }
         
-        // Get first sheet
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Check if worksheet is empty
         if (!worksheet || Object.keys(worksheet).length <= 1) {
-          throw new Error('The Excel sheet is empty. Please add questions using the template format.');
+          throw new Error('The Excel sheet is empty.');
         }
         
-        // Convert to JSON
-        const jsonData = XLSX.utils.sheet_to_json(worksheet) as ExcelQuestion[];
-
-        // Check if there's any data
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
         if (!jsonData || jsonData.length === 0) {
-          throw new Error('No questions found in the Excel file. Please add questions using the template format.');
+          throw new Error('No questions found in the Excel file.');
         }
 
-        // Validate the data format
-        const isValidFormat = jsonData.every(row => 
-          'Question' in row &&
-          'Option A' in row &&
-          'Option B' in row &&
-          'Option C' in row &&
-          'Option D' in row &&
-          'Correct Option' in row &&
-          'Explanation' in row
+        // More lenient validation - check only required fields
+        const requiredFields = ['Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct Option'];
+        const hasRequiredFields = jsonData.every(row => 
+          requiredFields.every(field => field in row)
         );
 
-        if (!isValidFormat) {
-          throw new Error('Invalid Excel format. Please use the template provided by clicking "Download Template".');
+        if (!hasRequiredFields) {
+          throw new Error('Missing required fields in Excel file. Please use the template provided.');
         }
 
-        resolve(jsonData);
+        resolve(jsonData as ExcelQuestion[]);
       } catch (error) {
         if (error instanceof Error) {
           reject(new Error(error.message));
         } else {
-          reject(new Error('Error processing Excel file. Please ensure you are using the correct template.'));
+          reject(new Error('Error processing Excel file.'));
         }
       }
     };
 
     reader.onerror = () => {
-      reject(new Error('Error reading the file. Please try again.'));
+      reject(new Error('Error reading the file.'));
     };
 
     reader.readAsArrayBuffer(file);

@@ -10,4 +10,5 @@ export interface Question {
   correctOption: string;
   explanation: string;
   isBookmarked?: boolean;
+  chapter?: string;
 }

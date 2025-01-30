@@ -1,5 +1,28 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Book, BookOpen, BookText, Brain, Heart, Flask, Microscope, Pill, Stethoscope, Eye, Ear } from "lucide-react";
+
+const subjectIcons: { [key: string]: React.ComponentType<any> } = {
+  "Anatomy": Heart,
+  "Physiology": Brain,
+  "Biochemistry": Flask,
+  "Pathology": Microscope,
+  "Microbiology": Flask,
+  "Pharmacology": Pill,
+  "Forensic Medicine": Book,
+  "Community Medicine": BookOpen,
+  "General Medicine": Stethoscope,
+  "General Surgery": BookText,
+  "Obstetrics & Gynecology": Heart,
+  "Pediatrics": Heart,
+  "Orthopedics": Book,
+  "ENT": Ear,
+  "Ophthalmology": Eye,
+  "Psychiatry": Brain,
+  "Dermatology": Book,
+  "Anesthesiology": BookText,
+  "Radiology": BookOpen,
+};
 
 interface SubjectCardProps {
   title: string;
@@ -16,6 +39,8 @@ export const SubjectCard = ({
   onClick,
   className,
 }: SubjectCardProps) => {
+  const Icon = subjectIcons[title] || Book;
+
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
@@ -31,7 +56,8 @@ export const SubjectCard = ({
       
       <div className="relative z-10 space-y-4">
         <div className="flex items-center justify-between">
-          <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+          <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+            <Icon className="h-4 w-4" />
             {Math.round(progress)}% Complete
           </span>
         </div>

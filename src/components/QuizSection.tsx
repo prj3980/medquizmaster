@@ -9,17 +9,14 @@ import { generateTemplate, processExcelFile } from "@/utils/excelUtils";
 import * as XLSX from 'xlsx';
 import { useQuestions } from "@/hooks/useQuestions";
 
-interface QuizSectionProps {
-  subjectId: number;
-  onBack: () => void;
-}
-
 export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
   const [mode, setMode] = useState<"practice" | "exam">("practice");
   const [selectedOption, setSelectedOption] = useState<string>();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const { questions, setQuestions } = useQuestions(subjectId);
   const { toast } = useToast();
+  const [currentChapter, setCurrentChapter] = useState<string>("");
+  const chapters = [...new Set(questions.map(q => q.chapter || 'General'))];
 
   const handleExportQuestions = () => {
     try {
@@ -30,7 +27,8 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
         'Option C': q.options[2].text,
         'Option D': q.options[3].text,
         'Correct Option': q.correctOption,
-        Explanation: q.explanation
+        Explanation: q.explanation,
+        Chapter: q.chapter || 'General'
       }));
 
       const wb = XLSX.utils.book_new();
@@ -59,7 +57,6 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
     try {
       const processedQuestions = await processExcelFile(file);
       
-      // Process each question sequentially
       for (const question of processedQuestions) {
         await addQuestion(subjectId, {
           text: question.Question,
@@ -71,13 +68,26 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
           ],
           correctOption: question["Correct Option"].toLowerCase(),
           explanation: question.Explanation,
-          isBookmarked: false
+          isBookmarked: false,
+          chapter: question.Chapter
         });
       }
 
-      // Fetch updated questions
       const updatedQuestions = await getQuestions(subjectId);
       setQuestions(updatedQuestions);
+
+      // Update subject's total questions count in localStorage
+      const subjectsJson = localStorage.getItem('subjects');
+      if (subjectsJson) {
+        const subjects = JSON.parse(subjectsJson);
+        const updatedSubjects = subjects.map((subject: any) => {
+          if (subject.id === subjectId) {
+            return { ...subject, totalQuestions: updatedQuestions.length };
+          }
+          return subject;
+        });
+        localStorage.setItem('subjects', JSON.stringify(updatedSubjects));
+      }
 
       toast({
         title: "Success",
@@ -87,7 +97,7 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
       console.error("Error importing questions:", error);
       toast({
         title: "Error",
-        description: "Failed to import questions. Please check the file format.",
+        description: error instanceof Error ? error.message : "Failed to import questions",
         variant: "destructive",
       });
     }
@@ -120,6 +130,10 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
     }
   };
 
+  const filteredQuestions = currentChapter 
+    ? questions.filter(q => (q.chapter || 'General') === currentChapter)
+    : questions;
+
   if (questions.length === 0) {
     return (
       <div className="mx-auto max-w-3xl space-y-6">
@@ -133,7 +147,7 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
             onDownloadTemplate={generateTemplate}
           />
         </div>
-        <div className="text-center py-8">Loading questions...</div>
+        <div className="text-center py-8">No questions available</div>
       </div>
     );
   }
@@ -151,23 +165,43 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
         />
       </div>
 
+      {chapters.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          <Button
+            variant={currentChapter === "" ? "default" : "outline"}
+            onClick={() => setCurrentChapter("")}
+          >
+            All Chapters
+          </Button>
+          {chapters.map((chapter) => (
+            <Button
+              key={chapter}
+              variant={currentChapter === chapter ? "default" : "outline"}
+              onClick={() => setCurrentChapter(chapter)}
+            >
+              {chapter}
+            </Button>
+          ))}
+        </div>
+      )}
+
       <QuestionCard
-        question={questions[currentQuestionIndex].text}
-        options={questions[currentQuestionIndex].options}
+        question={filteredQuestions[currentQuestionIndex].text}
+        options={filteredQuestions[currentQuestionIndex].options}
         selectedOption={selectedOption}
-        correctOption={questions[currentQuestionIndex].correctOption}
-        explanation={questions[currentQuestionIndex].explanation}
+        correctOption={filteredQuestions[currentQuestionIndex].correctOption}
+        explanation={filteredQuestions[currentQuestionIndex].explanation}
         onSelect={setSelectedOption}
         showExplanation={mode === "practice" && !!selectedOption}
         timeLimit={60}
         onTimeUp={() => console.log("Time's up!")}
-        isBookmarked={questions[currentQuestionIndex].isBookmarked}
+        isBookmarked={filteredQuestions[currentQuestionIndex].isBookmarked}
         onToggleBookmark={handleToggleBookmark}
       />
 
       <QuestionControls
         currentQuestionIndex={currentQuestionIndex}
-        totalQuestions={questions.length}
+        totalQuestions={filteredQuestions.length}
         onPrevious={() => {
           setCurrentQuestionIndex((prev) => prev - 1);
           setSelectedOption(undefined);
