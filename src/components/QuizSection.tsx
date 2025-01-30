@@ -4,7 +4,7 @@ import { QuestionControls } from "./QuestionControls";
 import { QuestionActions } from "./QuestionActions";
 import { Button } from "./ui/button";
 import { useToast } from "./ui/use-toast";
-import { updateBookmark, addQuestion, getQuestions } from "@/services/questionService";
+import { updateBookmark, addQuestions, getQuestions } from "@/services/questionService";
 import { generateTemplate, processExcelFile } from "@/utils/excelUtils";
 import * as XLSX from 'xlsx';
 import { useQuestions } from "@/hooks/useQuestions";
@@ -58,24 +58,27 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
     try {
       const processedQuestions = await processExcelFile(file);
       
-      for (const question of processedQuestions) {
-        await addQuestion(subjectId, {
-          text: question.Question,
-          options: [
-            { id: "a", text: question["Option A"] },
-            { id: "b", text: question["Option B"] },
-            { id: "c", text: question["Option C"] },
-            { id: "d", text: question["Option D"] }
-          ],
-          correctOption: question["Correct Option"].toLowerCase(),
-          explanation: question.Explanation,
-          isBookmarked: false,
-          chapter: question.Chapter
-        });
-      }
+      // Create questions array with IDs
+      const questionsWithIds = processedQuestions.map((question, index) => ({
+        id: index + 1,
+        text: question.Question,
+        options: [
+          { id: "a", text: question["Option A"] },
+          { id: "b", text: question["Option B"] },
+          { id: "c", text: question["Option C"] },
+          { id: "d", text: question["Option D"] }
+        ],
+        correctOption: question["Correct Option"].toLowerCase(),
+        explanation: question.Explanation,
+        isBookmarked: false,
+        chapter: question.Chapter
+      }));
 
-      const updatedQuestions = await getQuestions(subjectId);
-      setQuestions(updatedQuestions);
+      // Replace all questions for this subject
+      await addQuestions(subjectId, questionsWithIds);
+
+      // Update the local state
+      setQuestions(questionsWithIds);
 
       // Update subject's total questions count in localStorage
       const subjectsJson = localStorage.getItem('subjects');
@@ -83,7 +86,7 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
         const subjects = JSON.parse(subjectsJson);
         const updatedSubjects = subjects.map((subject: any) => {
           if (subject.id === subjectId) {
-            return { ...subject, totalQuestions: updatedQuestions.length };
+            return { ...subject, totalQuestions: questionsWithIds.length };
           }
           return subject;
         });
@@ -92,7 +95,7 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
 
       toast({
         title: "Success",
-        description: "Questions imported successfully",
+        description: `${questionsWithIds.length} questions imported successfully`,
       });
     } catch (error) {
       console.error("Error importing questions:", error);
