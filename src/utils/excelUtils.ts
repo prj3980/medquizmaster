@@ -12,16 +12,27 @@ interface ExcelQuestion {
 }
 
 export const generateTemplate = () => {
-  const template = [{
-    Question: 'What is the capital of France?',
-    'Option A': 'London',
-    'Option B': 'Paris',
-    'Option C': 'Berlin',
-    'Option D': 'Madrid',
-    'Correct Option': 'B',
-    Explanation: 'Paris is the capital and largest city of France.',
-    Chapter: 'Geography'
-  }];
+  const template = [
+    {
+      Question: 'What is the capital of France?',
+      'Option A': 'London',
+      'Option B': 'Paris',
+      'Option C': 'Berlin',
+      'Option D': 'Madrid',
+      'Correct Option': 'B',
+      Explanation: 'Paris is the capital and largest city of France.',
+      Chapter: 'Geography (Optional)'
+    },
+    {
+      Question: 'Another example question without chapter',
+      'Option A': 'Option 1',
+      'Option B': 'Option 2',
+      'Option C': 'Option 3',
+      'Option D': 'Option 4',
+      'Correct Option': 'A',
+      Explanation: 'This is an example without specifying a chapter',
+    }
+  ];
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.json_to_sheet(template);
@@ -65,7 +76,13 @@ export const processExcelFile = async (file: File): Promise<ExcelQuestion[]> => 
           throw new Error('Missing required fields in Excel file. Please use the template provided.');
         }
 
-        resolve(jsonData);
+        // Process chapters: if a question doesn't have a chapter, set it to 'General'
+        const processedData = jsonData.map(question => ({
+          ...question,
+          Chapter: question.Chapter?.replace(' (Optional)', '') || 'General'
+        }));
+
+        resolve(processedData);
       } catch (error) {
         if (error instanceof Error) {
           reject(new Error(error.message));
