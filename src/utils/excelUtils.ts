@@ -49,13 +49,13 @@ export const processExcelFile = async (file: File): Promise<ExcelQuestion[]> => 
           throw new Error('The Excel sheet is empty.');
         }
         
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const jsonData = XLSX.utils.sheet_to_json(worksheet) as ExcelQuestion[];
         
         if (!jsonData || jsonData.length === 0) {
           throw new Error('No questions found in the Excel file.');
         }
 
-        // More lenient validation - check only required fields
+        // Validate required fields
         const requiredFields = ['Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct Option'];
         const hasRequiredFields = jsonData.every(row => 
           requiredFields.every(field => field in row)
@@ -65,7 +65,7 @@ export const processExcelFile = async (file: File): Promise<ExcelQuestion[]> => 
           throw new Error('Missing required fields in Excel file. Please use the template provided.');
         }
 
-        resolve(jsonData as ExcelQuestion[]);
+        resolve(jsonData);
       } catch (error) {
         if (error instanceof Error) {
           reject(new Error(error.message));

@@ -8,6 +8,7 @@ import { updateBookmark, addQuestion, getQuestions } from "@/services/questionSe
 import { generateTemplate, processExcelFile } from "@/utils/excelUtils";
 import * as XLSX from 'xlsx';
 import { useQuestions } from "@/hooks/useQuestions";
+import { QuizSectionProps } from "@/types/quiz";
 
 export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
   const [mode, setMode] = useState<"practice" | "exam">("practice");

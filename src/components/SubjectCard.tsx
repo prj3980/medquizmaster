@@ -1,13 +1,13 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Book, BookOpen, BookText, Brain, Heart, Flask, Microscope, Pill, Stethoscope, Eye, Ear } from "lucide-react";
+import { Book, BookOpen, BookText, Brain, Heart, Beaker, Microscope, Pill, Stethoscope, Eye, Ear } from "lucide-react";
 
 const subjectIcons: { [key: string]: React.ComponentType<any> } = {
   "Anatomy": Heart,
   "Physiology": Brain,
-  "Biochemistry": Flask,
+  "Biochemistry": Beaker,
   "Pathology": Microscope,
-  "Microbiology": Flask,
+  "Microbiology": Beaker,
   "Pharmacology": Pill,
   "Forensic Medicine": Book,
   "Community Medicine": BookOpen,
