@@ -22,6 +22,8 @@ interface QuestionCardProps {
   className?: string;
   isBookmarked?: boolean;
   onToggleBookmark?: () => void;
+  isSubmitted?: boolean;
+  onSubmit?: () => void;
 }
 
 export const QuestionCard = ({
@@ -37,6 +39,8 @@ export const QuestionCard = ({
   className,
   isBookmarked,
   onToggleBookmark,
+  isSubmitted,
+  onSubmit,
 }: QuestionCardProps) => {
   return (
     <motion.div
@@ -77,16 +81,26 @@ export const QuestionCard = ({
               "w-full rounded-lg border p-4 text-left transition-all",
               "hover:border-primary hover:bg-primary/5",
               selectedOption === option.id && "border-primary bg-primary/5",
-              correctOption === option.id && "border-green-500 bg-green-50",
-              selectedOption === option.id &&
+              isSubmitted && correctOption === option.id && "border-green-500 bg-green-50",
+              isSubmitted && selectedOption === option.id &&
                 correctOption !== option.id &&
                 "border-red-500 bg-red-50"
             )}
-            disabled={!!selectedOption}
+            disabled={isSubmitted}
           >
             <span className="text-gray-900">{option.text}</span>
           </motion.button>
         ))}
+      </div>
+
+      <div className="mt-6">
+        <Button 
+          onClick={onSubmit} 
+          disabled={!selectedOption || isSubmitted}
+          className="w-full"
+        >
+          Submit Answer
+        </Button>
       </div>
 
       <AnimatePresence>

@@ -17,7 +17,30 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
   const { questions, setQuestions } = useQuestions(subjectId);
   const { toast } = useToast();
   const [currentChapter, setCurrentChapter] = useState<string>("");
+  const [submittedAnswers, setSubmittedAnswers] = useState<Record<number, boolean>>({});
+  const [score, setScore] = useState(0);
   const chapters = [...new Set(questions.map(q => q.chapter || 'General'))];
+
+  const handleSubmitAnswer = () => {
+    if (!selectedOption) return;
+
+    const currentQuestion = filteredQuestions[currentQuestionIndex];
+    const isCorrect = selectedOption === currentQuestion.correctOption;
+    
+    setSubmittedAnswers(prev => ({
+      ...prev,
+      [currentQuestionIndex]: true
+    }));
+
+    // Update score: +4 for correct, -1 for wrong
+    setScore(prev => prev + (isCorrect ? 4 : -1));
+
+    toast({
+      title: isCorrect ? "Correct!" : "Incorrect",
+      description: isCorrect ? "Well done!" : "Try again next time",
+      variant: isCorrect ? "default" : "destructive",
+    });
+  };
 
   const handleExportQuestions = () => {
     try {
@@ -160,13 +183,18 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center justify-between">
         <Button variant="outline" onClick={onBack}>← Back to Subjects</Button>
-        <QuestionActions
-          mode={mode}
-          onModeChange={setMode}
-          onExport={handleExportQuestions}
-          onImport={handleFileUpload}
-          onDownloadTemplate={generateTemplate}
-        />
+        <div className="flex items-center gap-4">
+          <div className="text-lg font-semibold">
+            Score: {score}
+          </div>
+          <QuestionActions
+            mode={mode}
+            onModeChange={setMode}
+            onExport={handleExportQuestions}
+            onImport={handleFileUpload}
+            onDownloadTemplate={generateTemplate}
+          />
+        </div>
       </div>
 
       {chapters.length > 1 && (
@@ -193,14 +221,16 @@ export const QuizSection = ({ subjectId, onBack }: QuizSectionProps) => {
         question={filteredQuestions[currentQuestionIndex].text}
         options={filteredQuestions[currentQuestionIndex].options}
         selectedOption={selectedOption}
-        correctOption={filteredQuestions[currentQuestionIndex].correctOption}
+        correctOption={submittedAnswers[currentQuestionIndex] ? filteredQuestions[currentQuestionIndex].correctOption : undefined}
         explanation={filteredQuestions[currentQuestionIndex].explanation}
         onSelect={setSelectedOption}
-        showExplanation={mode === "practice" && !!selectedOption}
+        showExplanation={mode === "practice" && submittedAnswers[currentQuestionIndex]}
         timeLimit={60}
         onTimeUp={() => console.log("Time's up!")}
         isBookmarked={filteredQuestions[currentQuestionIndex].isBookmarked}
         onToggleBookmark={handleToggleBookmark}
+        isSubmitted={submittedAnswers[currentQuestionIndex]}
+        onSubmit={handleSubmitAnswer}
       />
 
       <QuestionControls
